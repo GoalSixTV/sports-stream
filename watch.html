@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Streaming Theater | StreamFlix Sports</title>
+  <meta name="description" content="Cinematic live sports streaming theater. Watch live matches in 4K with multi-server instant switching and zero buffering." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+            bebas: ['"Bebas Neue"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit & Bebas Neue -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Official Latest JW Player CDN -->
+  <script src="https://cdn.jwplayer.com/libraries/KB5zFt7A.js"></script>
+
+  <!-- Hls.js Fallback Engine CDN for 100% Guaranteed Stream Reliability -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    .theater-glow {
+      box-shadow: 0 0 60px -10px rgba(16, 185, 129, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+    .jw-player-container {
+      position: relative;
+      width: 100%;
+      height: 0;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      background: #020617;
+    }
+    .jw-player-container > div,
+    .jw-player-container > iframe,
+    .jw-player-container > video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-950 via-zinc-950 to-black text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-black antialiased overflow-x-hidden">
+
+  <!-- Ambient Light Orbs -->
+  <div class="fixed top-12 left-1/2 -translate-x-1/2 w-[45rem] h-96 bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none -z-10"></div>
+
+  <!-- Theater Header / Navigation Bar -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/85 border-b border-slate-800/70 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-4">
+      
+      <!-- Back to Home Button -->
+      <a 
+        href="index.html" 
+        class="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all group shadow-md"
+      >
+        <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-emerald-400"></i>
+        <span>Back to Home</span>
+      </a>
+
+      <!-- Center Dynamic Match Title (Compact on Mobile) -->
+      <div class="flex-1 max-w-lg text-center truncate px-2">
+        <div class="flex items-center justify-center gap-2 truncate">
+          <span id="theater-live-pill" class="hidden shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            LIVE
+          </span>
+          <span id="header-match-title" class="font-display font-bold text-sm sm:text-base text-slate-100 truncate">
+            Loading Live Broadcast...
+          </span>
+        </div>
+        <p id="header-tournament" class="text-[11px] text-slate-400 truncate -mt-0.5">Streaming Platform</p>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex items-center gap-2">
+        <button 
+          id="share-match-btn" 
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-all"
+          title="Share Match Link"
+        >
+          <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Share</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Theater Container -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+
+    <!-- THEATER STAGE -->
+    <div class="space-y-4">
+      
+      <!-- Multi-Server Switching Row & Stream Diagnostics -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-slate-800/80">
+        
+        <!-- Left: Multi-Server Selection Pill Buttons -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 shrink-0 pr-1">
+            <i data-lucide="server" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>STREAM SERVER:</span>
+          </span>
+
+          <div id="server-buttons-container" class="flex items-center gap-2">
+            <!-- Injected dynamically via JS based on match data -->
+            <button class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.35)]">
+              Server 1 (HD Main)
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Stream Status Badges -->
+        <div class="flex items-center gap-2 self-end sm:self-auto text-[11px] text-slate-400">
+          <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/70 border border-slate-800 text-emerald-400 font-medium">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            1080p 60FPS Low-Latency
+          </span>
+          <span id="obfuscation-tag" class="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-950/70 border border-slate-800 text-slate-300 font-medium" title="Safe Base64 Stream Obfuscation Active">
+            <i data-lucide="lock" class="w-3 h-3 text-emerald-400"></i>
+            <span>Encrypted Stream</span>
+          </span>
+          <button id="reload-stream-btn" title="Reload Current Stream" class="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- VIDEO PLAYER THEATER SCREEN -->
+      <div class="relative rounded-3xl overflow-hidden theater-glow border border-slate-800/90 bg-slate-950">
+        
+        <!-- Stream Player Wrapper -->
+        <div id="player-wrapper" class="jw-player-container">
+          
+          <!-- JW Player Target Container -->
+          <div id="jw-player-target"></div>
+
+          <!-- HTML5 Video / HLS.js Fallback Container (hidden by default) -->
+          <video 
+            id="native-video-target" 
+            class="hidden w-full h-full object-contain bg-black" 
+            controls 
+            playsinline 
+            autoplay
+          ></video>
+
+          <!-- Iframe Fallback Container (for third-party embed links) -->
+          <iframe 
+            id="iframe-target" 
+            class="hidden w-full h-full border-0" 
+            allow="autoplay; encrypted-media; fullscreen" 
+            allowfullscreen
+          ></iframe>
+
+          <!-- Loading Spinner Overlay -->
+          <div id="player-loading-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center gap-3 z-30 transition-opacity duration-300">
+            <div class="relative">
+              <div class="w-14 h-14 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
+              <i data-lucide="play" class="w-5 h-5 text-emerald-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></i>
+            </div>
+            <p id="player-loading-text" class="text-xs font-medium tracking-wider text-slate-300 uppercase">Connecting to Multi-Server Network...</p>
+          </div>
+
+          <!-- Player Error / Fallback Alert Box -->
+          <div id="player-error-banner" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-40 space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div class="max-w-md">
+              <h4 class="font-bold text-slate-100 text-sm sm:text-base">Stream Buffer Notice</h4>
+              <p id="player-error-desc" class="text-xs text-slate-400 mt-1">This server link encountered a momentary network timeout. Switch to Server 2 or switch to backup engine.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button id="switch-server-btn" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-all flex items-center gap-1.5">
+                <i data-lucide="server" class="w-3.5 h-3.5"></i>
+                <span>Switch to Backup Server</span>
+              </button>
+              <button id="retry-current-btn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all">
+                Retry Stream
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- MATCH LIVE METRICS & SCOREBOARD CARD -->
+      <div id="match-details-card" class="rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-slate-800/80 p-5 sm:p-6 space-y-6">
+        
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          
+          <!-- Team 1 -->
+          <div class="flex-1 flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-950 p-2.5 border border-slate-800 shadow-inner flex items-center justify-center shrink-0">
+              <img id="watch-t1-logo" src="" alt="Team 1" class="w-full h-full object-contain rounded-xl" />
+            </div>
+            <div class="text-left">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Team One</span>
+              <h3 id="watch-t1-name" class="font-display font-extrabold text-lg sm:text-xl text-white">Team 1</h3>
+            </div>
+          </div>
+
+          <!-- Center VS & Score Pillar -->
+          <div class="shrink-0 flex flex-col items-center justify-center px-6 py-2 rounded-2xl bg-slate-950/70 border border-slate-800">
+            <span id="watch-tournament-badge" class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 mb-1">
+              CHAMPIONSHIP
+            </span>
+            <div id="watch-score-display" class="font-bebas text-3xl sm:text-4xl text-slate-100 tracking-wider">
+              VS
+            </div>
+            <span id="watch-status-text" class="text-[11px] font-semibold text-emerald-400 mt-0.5 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Broadcast Active
+            </span>
+          </div>
+
+          <!-- Team 2 -->
+          <div class="flex-1 flex items-center gap-4 w-full md:w-auto justify-center md:justify-end">
+            <div class="text-center md:text-right order-2 md:order-1">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400">Team Two</span>
+              <h3 id="watch-t2-name" class="font-display font-extrabold text-lg sm:text-xl text-white">Team 2</h3>
+            </div>
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-950 p-2.5 border border-slate-800 shadow-inner flex items-center justify-center shrink-0 order-1 md:order-2">
+              <img id="watch-t2-logo" src="" alt="Team 2" class="w-full h-full object-contain rounded-xl" />
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Additional Match Metadata Footer -->
+        <div class="pt-4 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Official CDN Routing</span>
+            </span>
+            <span class="text-slate-700">•</span>
+            <span id="watch-time-tag">Broadcasted Live</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Having playback trouble?</span>
+            <button id="switch-backup-btn" class="text-emerald-400 hover:text-emerald-300 font-bold underline transition-colors">
+              Click to Switch Server
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- MORE LIVE MATCHES SECTION -->
+    <section class="space-y-4 pt-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-display font-extrabold text-xl tracking-tight text-white flex items-center gap-2">
+            <span>MORE LIVE & UPCOMING MATCHES</span>
+          </h3>
+          <p class="text-xs text-slate-400">Switch instantly to other sports events in real time</p>
+        </div>
+        <a href="index.html" class="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+          <span>View All</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+
+      <!-- More Matches Grid -->
+      <div id="more-matches-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Share Toast Notification Popup -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-slate-900/95 border border-emerald-500/50 text-slate-100 shadow-2xl backdrop-blur-xl text-xs font-medium">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-text">Link copied to clipboard!</span>
+  </div>
+
+  <!-- Firebase Modular Scripts via Official CDN -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, updateDoc, deleteDoc, 
+      getDoc, setDoc, doc, onSnapshot, query, orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Required Pre-filled Firebase Configuration Block
+    const firebaseConfig = {
+        apiKey: "AIzaSyAQdCPO4sKVBF_dkbNXMgivGDt7mNkWGZE",
+        authDomain: "test-f0a7c.firebaseapp.com",
+        projectId: "test-f0a7c",
+        storageBucket: "test-f0a7c.firebasestorage.app",
+        messagingSenderId: "508871646009",
+        appId: "1:508871646009:web:4eabd2120a043586f366e8"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Fallback Mock Matches if Firestore match document is empty
+    const FALLBACK_MATCHES = {
+      "m1": {
+        id: "m1",
+        category: "Football",
+        tournament: "UEFA Champions League",
+        isLive: true,
+        matchTime: "Live Now • 74'",
+        team1: { name: "Real Madrid", logo: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=120&auto=format&fit=crop&q=80" },
+        team2: { name: "Manchester City", logo: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=120&auto=format&fit=crop&q=80" },
+        score: "2 - 1",
+        stream1: "aHR0cHM6Ly90ZXN0LXN0cmVhbXMubXV4LmRldi94M2lrY2FzL3gzaWtjYXMubTN1OA==", // Base64 encoded test HLS
+        stream2: "https://cph-p2p-msl.akamaized.net/hls/live/200034/test/master.m3u8",
+        isObfuscated: true
+      },
+      "m2": {
+        id: "m2",
+        category: "Cricket",
+        tournament: "ICC Men's T20 World Cup",
+        isLive: true,
+        matchTime: "Live Now • 17.4 Overs",
+        team1: { name: "India", logo: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=120&auto=format&fit=crop&q=80" },
+        team2: { name: "Australia", logo: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=120&auto=format&fit=crop&q=80" },
+        score: "168/4 (17.4)",
+        stream1: "aHR0cHM6Ly9jcGgtcDJwLW1zbC5ha2FtYWl6ZWQubmV0L2hscy9saXZlLzIwMDAzNC90ZXN0L21hc3Rlci5tM3U4",
+        stream2: "https://test-streams.mux.dev/x3ikcas/x3ikcas.m3u8",
+        isObfuscated: true
+      },
+      "m3": {
+        id: "m3",
+        category: "IPL",
+        tournament: "Indian Premier League 2026",
+        isLive: true,
+        matchTime: "Live Now • Innings Break",
+        team1: { name: "Chennai Super Kings", logo: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=120&auto=format&fit=crop&q=80" },
+        team2: { name: "Mumbai Indians", logo: "https://images.unsplash.com/photo-1489944445391-11dd353634b4?w=120&auto=format&fit=crop&q=80" },
+        score: "192/5 (20.0)",
+        stream1: "https://test-streams.mux.dev/x3ikcas/x3ikcas.m3u8",
+        stream2: "https://cph-p2p-msl.akamaized.net/hls/live/200034/test/master.m3u8",
+        isObfuscated: false
+      }
+    };
+
+    // Extract Match ID from URL Query Parameter (?id=XYZ)
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchId = urlParams.get("id") || "m1";
+
+    // Theater State
+    let currentMatch = null;
+    let activeServerIndex = 0; // 0 for stream1, 1 for stream2, 2 for stream3
+    let availableServers = [];
+    let jwInstance = null;
+    let hlsInstance = null;
+
+    // DOM Elements
+    const headerMatchTitle = document.getElementById("header-match-title");
+    const headerTournament = document.getElementById("header-tournament");
+    const theaterLivePill = document.getElementById("theater-live-pill");
+    const serverButtonsContainer = document.getElementById("server-buttons-container");
+    const obfuscationTag = document.getElementById("obfuscation-tag");
+    const playerLoadingOverlay = document.getElementById("player-loading-overlay");
+    const playerLoadingText = document.getElementById("player-loading-text");
+    const playerErrorBanner = document.getElementById("player-error-banner");
+    const playerErrorDesc = document.getElementById("player-error-desc");
+    const jwPlayerTarget = document.getElementById("jw-player-target");
+    const nativeVideoTarget = document.getElementById("native-video-target");
+    const iframeTarget = document.getElementById("iframe-target");
+
+    const watchT1Logo = document.getElementById("watch-t1-logo");
+    const watchT1Name = document.getElementById("watch-t1-name");
+    const watchT2Logo = document.getElementById("watch-t2-logo");
+    const watchT2Name = document.getElementById("watch-t2-name");
+    const watchScoreDisplay = document.getElementById("watch-score-display");
+    const watchTournamentBadge = document.getElementById("watch-tournament-badge");
+    const watchStatusText = document.getElementById("watch-status-text");
+    const watchTimeTag = document.getElementById("watch-time-tag");
+    const moreMatchesGrid = document.getElementById("more-matches-grid");
+
+    // SECURE BASE64 STREAM OBFUSCATION RUNTIME DECODER
+    // Decodes obfuscated Base64 streams securely inside try/catch before passing to player
+    function decodeStreamUrl(rawUrl) {
+      if (!rawUrl) return "";
+      const trimmed = rawUrl.trim();
+
+      // If it's already a regular direct URL or iframe embed, return directly
+      if (/^(https?:|\/\/|<iframe)/i.test(trimmed)) {
+        return trimmed;
+      }
+
+      // Safe Base64 decoding wrapper
+      try {
+        const decoded = atob(trimmed);
+        if (/^(https?:|\/\/|<iframe)/i.test(decoded.trim())) {
+          return decoded.trim();
+        }
+        return trimmed;
+      } catch (err) {
+        console.warn("Stream string was not base64 encoded or decode failed. Using as-is:", err);
+        return trimmed;
+      }
+    }
+
+    // Initialize or Refresh Lucide Icons
+    function refreshIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    // Toast Notification helper
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      const toastText = document.getElementById("toast-text");
+      toastText.textContent = msg;
+      toast.classList.remove("opacity-0", "translate-y-20");
+      toast.classList.add("opacity-100", "translate-y-0");
+
+      setTimeout(() => {
+        toast.classList.remove("opacity-100", "translate-y-0");
+        toast.classList.add("opacity-0", "translate-y-20");
+      }, 3000);
+    }
+
+    // 1. QUERY FIRESTORE FOR CURRENT MATCH IN REAL-TIME
+    function loadMatch() {
+      try {
+        const matchRef = doc(db, "matches", matchId);
+        onSnapshot(matchRef, (docSnap) => {
+          if (docSnap.exists()) {
+            currentMatch = { id: docSnap.id, ...docSnap.data() };
+            updateTheaterUI(currentMatch);
+          } else if (FALLBACK_MATCHES[matchId]) {
+            currentMatch = FALLBACK_MATCHES[matchId];
+            updateTheaterUI(currentMatch);
+          } else {
+            // Pick first fallback match
+            currentMatch = FALLBACK_MATCHES["m1"];
+            updateTheaterUI(currentMatch);
+          }
+        }, (error) => {
+          console.warn("Match snapshot error, using fallback:", error.message);
+          currentMatch = FALLBACK_MATCHES[matchId] || FALLBACK_MATCHES["m1"];
+          updateTheaterUI(currentMatch);
+        });
+      } catch (e) {
+        currentMatch = FALLBACK_MATCHES[matchId] || FALLBACK_MATCHES["m1"];
+        updateTheaterUI(currentMatch);
+      }
+    }
+
+    // Update Theater UI and Configure Servers
+    function updateTheaterUI(match) {
+      const t1 = match.team1?.name || "Team 1";
+      const t2 = match.team2?.name || "Team 2";
+      const tournament = match.tournament || "Championship";
+
+      document.title = `${t1} vs ${t2} - Live Stream | StreamFlix Sports`;
+      headerMatchTitle.textContent = `${t1} vs ${t2}`;
+      headerTournament.textContent = tournament;
+
+      if (match.isLive) {
+        theaterLivePill.classList.remove("hidden");
+      } else {
+        theaterLivePill.classList.add("hidden");
+      }
+
+      // Match Details Card
+      watchT1Name.textContent = t1;
+      watchT2Name.textContent = t2;
+      watchT1Logo.src = match.team1?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t1)}&background=065f46&color=fff`;
+      watchT2Logo.src = match.team2?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t2)}&background=1e293b&color=fff`;
+      watchTournamentBadge.textContent = tournament;
+      watchScoreDisplay.textContent = match.score || "VS";
+      watchTimeTag.textContent = match.matchTime || "Live Now";
+
+      if (match.isLive) {
+        watchStatusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Broadcast Active`;
+      } else {
+        watchStatusText.innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i> Scheduled: ${match.matchTime || 'Upcoming'}`;
+      }
+
+      // Gather Available Streams / Servers
+      availableServers = [];
+      if (match.stream1) availableServers.push({ name: "Server 1 (HD Main)", url: match.stream1 });
+      if (match.stream2) availableServers.push({ name: "Server 2 (Low Latency)", url: match.stream2 });
+      if (match.stream3) availableServers.push({ name: "Server 3 (HD Mirror)", url: match.stream3 });
+
+      // If no stream specified, supply reliable sample HLS stream for demo
+      if (availableServers.length === 0) {
+        availableServers.push(
+          { name: "Server 1 (HD Main)", url: "https://test-streams.mux.dev/x3ikcas/x3ikcas.m3u8" },
+          { name: "Server 2 (Backup Mirror)", url: "https://cph-p2p-msl.akamaized.net/hls/live/200034/test/master.m3u8" }
+        );
+      }
+
+      // Show obfuscation tag if match has obfuscated streams
+      if (match.isObfuscated) {
+        obfuscationTag.classList.remove("hidden");
+      } else {
+        obfuscationTag.classList.add("hidden");
+      }
+
+      renderServerButtons();
+      playServer(activeServerIndex);
+      refreshIcons();
+    }
+
+    // Render Multi-Server Selection Pill Buttons
+    function renderServerButtons() {
+      serverButtonsContainer.innerHTML = "";
+
+      availableServers.forEach((server, index) => {
+        const btn = document.createElement("button");
+        const isActive = index === activeServerIndex;
+
+        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+          isActive 
+            ? "bg-emerald-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.35)] scale-105" 
+            : "bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700"
+        }`;
+
+        btn.innerHTML = `
+          <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-slate-950 animate-pulse' : 'bg-emerald-500'}"></span>
+          <span>${server.name}</span>
+        `;
+
+        btn.onclick = () => {
+          if (activeServerIndex !== index) {
+            activeServerIndex = index;
+            renderServerButtons();
+            playServer(activeServerIndex);
+          }
+        };
+
+        serverButtonsContainer.appendChild(btn);
+      });
+    }
+
+    // 2. PLAYBACK ENGINE: JW PLAYER INTEGRATION + HLS.JS / IFRAME FALLBACK
+    function playServer(serverIndex) {
+      const server = availableServers[serverIndex];
+      if (!server) return;
+
+      // Safe Runtime Base64 Decryption
+      const decodedStreamUrl = decodeStreamUrl(server.url);
+
+      // Reset previous instances and error states
+      playerErrorBanner.classList.add("hidden");
+      playerLoadingOverlay.classList.remove("hidden", "opacity-0");
+      playerLoadingText.textContent = `Connecting to ${server.name}...`;
+
+      // Clean up previous Hls instance
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+
+      // Check if it's an iframe embed snippet or third-party embed URL
+      if (decodedStreamUrl.includes("<iframe") || decodedStreamUrl.includes("youtube.com/embed") || decodedStreamUrl.includes("dailymotion.com")) {
+        renderIframeStream(decodedStreamUrl);
+        return;
+      }
+
+      // Standard Video Stream (.m3u8, .mp4, etc.) -> Initialize JW Player
+      initJwPlayer(decodedStreamUrl);
+    }
+
+    // Render Iframe stream
+    function renderIframeStream(srcOrHtml) {
+      jwPlayerTarget.classList.add("hidden");
+      nativeVideoTarget.classList.add("hidden");
+      iframeTarget.classList.remove("hidden");
+
+      let finalSrc = srcOrHtml;
+      const srcMatch = srcOrHtml.match(/src=["']([^"']+)["']/i);
+      if (srcMatch && srcMatch[1]) {
+        finalSrc = srcMatch[1];
+      }
+
+      iframeTarget.src = finalSrc;
+      iframeTarget.onload = () => {
+        playerLoadingOverlay.classList.add("hidden");
+      };
+    }
+
+    // Initialize Official JW Player
+    function initJwPlayer(streamUrl) {
+      jwPlayerTarget.classList.remove("hidden");
+      nativeVideoTarget.classList.add("hidden");
+      iframeTarget.classList.add("hidden");
+
+      // Check if jwplayer global is loaded
+      if (typeof window.jwplayer === "function") {
+        try {
+          if (jwInstance) {
+            try { jwInstance.remove(); } catch(e) {}
+          }
+
+          jwPlayerTarget.innerHTML = "";
+          const playerElementId = "jw-player-target";
+
+          jwInstance = window.jwplayer(playerElementId).setup({
+            file: streamUrl,
+            width: "100%",
+            height: "100%",
+            autostart: true,
+            mute: false,
+            floating: false,
+            playbackRateControls: true,
+            controls: true,
+            skin: {
+              name: "glow",
+              active: "#10b981",
+              inactive: "#94a3b8",
+              background: "#020617"
+            }
+          });
+
+          jwInstance.on("ready", () => {
+            playerLoadingOverlay.classList.add("hidden");
+          });
+
+          jwInstance.on("play", () => {
+            playerLoadingOverlay.classList.add("hidden");
+          });
+
+          // Error catching: If JW Player encounters setup or network failure, trigger fallback
+          jwInstance.on("error", (e) => {
+            console.warn("JW Player stream error caught:", e);
+            fallbackToHlsJs(streamUrl, e.message || "JW Player buffer error");
+          });
+
+          jwInstance.on("setupError", (e) => {
+            console.warn("JW Player setupError caught:", e);
+            fallbackToHlsJs(streamUrl, e.message || "JW Player setup error");
+          });
+
+          // Timeout failsafe: Hide loader after 4 seconds
+          setTimeout(() => {
+            playerLoadingOverlay.classList.add("hidden");
+          }, 4000);
+
+          return;
+        } catch (err) {
+          console.warn("JW player setup exception, executing fallback:", err);
+          fallbackToHlsJs(streamUrl, err.message);
+        }
+      } else {
+        // JW Player library not loaded, fall back directly to HLS.js / Native Video
+        fallbackToHlsJs(streamUrl, "JW Player library not available");
+      }
+    }
+
+    // High-Reliability Fallback using Hls.js or Native HTML5 Video
+    function fallbackToHlsJs(streamUrl, reason) {
+      console.log("Activating Secondary Ultra-Low Latency Engine. Reason:", reason);
+
+      jwPlayerTarget.classList.add("hidden");
+      iframeTarget.classList.add("hidden");
+      nativeVideoTarget.classList.remove("hidden");
+
+      // If Hls.js is supported and stream is .m3u8
+      if (window.Hls && window.Hls.isSupported() && (streamUrl.includes(".m3u8") || !streamUrl.includes(".mp4"))) {
+        hlsInstance = new window.Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 90
+        });
+
+        hlsInstance.loadSource(streamUrl);
+        hlsInstance.attachMedia(nativeVideoTarget);
+
+        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          playerLoadingOverlay.classList.add("hidden");
+          nativeVideoTarget.play().catch(e => console.log("Autoplay policy:", e));
+        });
+
+        hlsInstance.on(window.Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.warn("HLS.js fatal error:", data.type);
+            showPlayerError(streamUrl, "Primary and secondary streams experienced network interruption.");
+          }
+        });
+      } else if (nativeVideoTarget.canPlayType("application/vnd.apple.mpegurl")) {
+        // Native Safari / iOS HLS support
+        nativeVideoTarget.src = streamUrl;
+        nativeVideoTarget.addEventListener("loadedmetadata", () => {
+          playerLoadingOverlay.classList.add("hidden");
+          nativeVideoTarget.play().catch(e => console.log("Autoplay:", e));
+        });
+        nativeVideoTarget.addEventListener("error", () => {
+          showPlayerError(streamUrl, "Stream format error.");
+        });
+      } else {
+        // Standard Direct MP4 / WebM
+        nativeVideoTarget.src = streamUrl;
+        nativeVideoTarget.play().catch(e => console.log("Autoplay:", e));
+        playerLoadingOverlay.classList.add("hidden");
+      }
+    }
+
+    function showPlayerError(url, reason) {
+      playerLoadingOverlay.classList.add("hidden");
+      playerErrorBanner.classList.remove("hidden");
+      playerErrorDesc.textContent = reason || "The selected stream server is currently experiencing network limits. Switch to Server 2 for uninterrupted coverage.";
+    }
+
+    // 3. LISTEN TO ALL MATCHES FOR "MORE LIVE MATCHES" CAROUSEL
+    function loadMoreMatches() {
+      try {
+        const matchesCol = collection(db, "matches");
+        onSnapshot(matchesCol, (snapshot) => {
+          let list = [];
+          if (!snapshot.empty) {
+            list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          } else {
+            list = Object.values(FALLBACK_MATCHES);
+          }
+
+          // Exclude current match
+          const otherMatches = list.filter(m => m.id !== matchId).slice(0, 6);
+          renderMoreMatches(otherMatches);
+        }, (err) => {
+          console.warn("More matches fallback:", err);
+          renderMoreMatches(Object.values(FALLBACK_MATCHES).filter(m => m.id !== matchId));
+        });
+      } catch (err) {
+        renderMoreMatches(Object.values(FALLBACK_MATCHES).filter(m => m.id !== matchId));
+      }
+    }
+
+    function renderMoreMatches(matches) {
+      moreMatchesGrid.innerHTML = "";
+      if (!matches || matches.length === 0) {
+        moreMatchesGrid.innerHTML = `<p class="col-span-full text-center text-xs text-slate-500 py-6">No other live matches right now.</p>`;
+        return;
+      }
+
+      matches.forEach(match => {
+        const item = document.createElement("div");
+        item.className = "group rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-slate-800/80 hover:border-emerald-500/50 p-4 transition-all hover:scale-[1.02] cursor-pointer shadow-lg";
+        item.onclick = () => {
+          window.location.href = `watch.html?id=${match.id}`;
+        };
+
+        const t1Logo = match.team1?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.team1?.name || 'T1')}&background=065f46&color=fff`;
+        const t2Logo = match.team2?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.team2?.name || 'T2')}&background=1e293b&color=fff`;
+
+        item.innerHTML = `
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold mb-3">
+            <span class="uppercase">${match.category || 'SPORT'}</span>
+            ${match.isLive 
+              ? '<span class="text-emerald-400 flex items-center gap-1 font-bold animate-pulse"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> LIVE</span>' 
+              : `<span>${match.matchTime || 'UPCOMING'}</span>`
+            }
+          </div>
+          
+          <div class="flex items-center justify-between gap-2 py-1">
+            <div class="flex items-center gap-2.5 truncate">
+              <img src="${t1Logo}" class="w-7 h-7 rounded-full bg-slate-950 p-1 border border-slate-800 object-contain" />
+              <span class="text-xs font-bold text-slate-100 truncate">${match.team1?.name || 'Team 1'}</span>
+            </div>
+            <span class="text-[10px] font-black text-slate-500">VS</span>
+            <div class="flex items-center gap-2.5 truncate justify-end">
+              <span class="text-xs font-bold text-slate-100 truncate">${match.team2?.name || 'Team 2'}</span>
+              <img src="${t2Logo}" class="w-7 h-7 rounded-full bg-slate-950 p-1 border border-slate-800 object-contain" />
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+            <span class="truncate">${match.tournament || 'Championship'}</span>
+            <span class="text-emerald-400 font-bold group-hover:translate-x-1 transition-transform">Switch →</span>
+          </div>
+        `;
+
+        moreMatchesGrid.appendChild(item);
+      });
+
+      refreshIcons();
+    }
+
+    // Action Listeners
+    document.getElementById("share-match-btn").addEventListener("click", () => {
+      navigator.clipboard.writeText(window.location.href);
+      showToast("Match stream link copied to clipboard!");
+    });
+
+    document.getElementById("reload-stream-btn").addEventListener("click", () => {
+      playServer(activeServerIndex);
+      showToast("Reloading stream connection...");
+    });
+
+    document.getElementById("switch-server-btn").addEventListener("click", () => {
+      activeServerIndex = (activeServerIndex + 1) % availableServers.length;
+      renderServerButtons();
+      playServer(activeServerIndex);
+    });
+
+    document.getElementById("switch-backup-btn").addEventListener("click", () => {
+      activeServerIndex = (activeServerIndex + 1) % availableServers.length;
+      renderServerButtons();
+      playServer(activeServerIndex);
+    });
+
+    document.getElementById("retry-current-btn").addEventListener("click", () => {
+      playServer(activeServerIndex);
+    });
+
+    // Start Real-Time Watch System
+    loadMatch();
+    loadMoreMatches();
+    refreshIcons();
+  </script>
+</body>
+</html>
